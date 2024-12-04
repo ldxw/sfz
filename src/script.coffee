@@ -1,10 +1,12 @@
 $ = (sel) -> document.querySelector sel
 
-inputItems = ['text', 'color', 'alpha', 'space', 'size']
+inputItems = ['text', 'color', 'alpha', 'angle', 'space', 'size']
 input = {}
 
 image = $ '#image'
 graph = $ '#graph'
+refresh = $ '#refresh'
+autoRefresh = $ '#auto-refresh'
 file = null
 canvas = null
 textCtx = null
@@ -45,10 +47,8 @@ readFile = ->
             ctx.drawImage img, 0, 0
 
             redraw = ->
-                ctx.rotate 315 * Math.PI / 180
                 ctx.clearRect 0, 0, canvas.width, canvas.height
                 ctx.drawImage img, 0, 0
-                ctx.rotate 45 * Math.PI / 180
             
             drawText()
 
@@ -90,8 +90,11 @@ drawText = ->
         redraw()
     else
         textCtx = canvas.getContext '2d'
-        textCtx.rotate 45 * Math.PI / 180
     
+    textCtx.save()
+    textCtx.translate(canvas.width / 2, canvas.height / 2)
+    textCtx.rotate (input.angle.value) * Math.PI / 180
+
     textCtx.fillStyle = makeStyle()
     textCtx.font = 'bold ' + textSize + 'px -apple-system,"Helvetica Neue",Helvetica,Arial,"PingFang SC","Hiragino Sans GB","WenQuanYi Micro Hei",sans-serif'
     
@@ -102,9 +105,11 @@ drawText = ->
     x = Math.ceil step / (width + margin)
     y = Math.ceil (step / (input.space.value * textSize)) / 2
 
-    for i in [0..x]
+    for i in [-x..x]
         for j in [-y..y]
             textCtx.fillText input.text.value, (width + margin) * i, input.space.value * textSize * j
+    
+    textCtx.restore()
     return
 
 
@@ -118,6 +123,15 @@ image.addEventListener 'change', ->
 inputItems.forEach (item) ->
     el = $ '#' + item
     input[item] = el
+
+    autoRefresh.addEventListener 'change', ->
+        if @checked
+            refresh.setAttribute 'disabled', 'disabled'
+        else
+            refresh.removeAttribute 'disabled'
     
-    el.addEventListener 'input', drawText
+    el.addEventListener 'input', ->
+        drawText() if autoRefresh.checked
+
+    refresh.addEventListener 'click', drawText
 
